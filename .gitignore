@@ -6,3 +6,5 @@ inventory.json
 telemetry.csv
 STRATA-Deploy.zip
 STRATA-Demo-Package.zip
+
+.netlify/

@@ -4,7 +4,9 @@ A working storage observatory for the LLT Unit 5 case study, Section G1.
 
 ## Open the UI immediately
 
-Live demo: https://strata-capacity-g1.dearmagnolia16.chatgpt.site (owner ChatGPT sign-in required).
+Live demo: https://cosmic-treacle-ecfb9c.netlify.app (no login required).
+
+Presentation: https://cosmic-treacle-ecfb9c.netlify.app/presentation
 
 For an offline backup, double-click **`dist/STRATA-Offline.html`**. This is the complete dashboard in one file, with CSS, charts, model and demo observations embedded. No installation, API key or server is needed. `dist/index.html` is the multi-file deployment entrypoint. The presentation is `dist/presentation.html`.
 
@@ -33,7 +35,7 @@ The advisor is not an LLM. Regression is a fitted statistical model. The startin
 | Collection | Python standard library | Measures real containing-volume usage |
 | History | SQLite | Local, durable timestamped observations |
 | Exchange | CSV | Inspectable data and straightforward imports |
-| Hosting | ChatGPT Sites | No server or database credentials in the frontend |
+| Hosting | Netlify static hosting | No server or database credentials in the frontend |
 
 ## Real collection
 
@@ -72,7 +74,7 @@ Nine JavaScript tests cover exact-fit recovery, holdout separation, threshold ed
 
 The `dist` directory is ready for static deployment. `netlify.toml` sets its publish path. To deploy from GitHub, import this repository into Netlify, leave the build command empty and set the publish directory to `dist`. For manual deployment, upload a ZIP containing the contents of `dist` with `index.html` at its root.
 
-The app is deployed on ChatGPT Sites at the live link above. It is owner-private; sign in with the owning ChatGPT account. The source identity is in `.openai/hosting.json`. Deployment succeeded, but browser interaction checks are blocked by owner sign-in. Check `docs/DELIVERY_STATUS.md` for verification details.
+The public app is deployed on Netlify through a manual ZIP upload. GitHub pushes do not automatically redeploy it; upload a fresh dist bundle for future releases. The earlier owner-private ChatGPT Sites deployment remains available. See `docs/DELIVERY_STATUS.md` for verified checks.
 
 ## Model details and limitations
 
@@ -85,8 +87,8 @@ Alerts and scenarios are browser-session state. Imported telemetry and folder me
 ## Accounts required
 
 - GitHub: existing connected account, private source repository.
-- ChatGPT: your existing owning account opens the private live deployment.
-- Netlify: optional alternative hosting; not required for the deployed Sites version.
+- Netlify: existing connected account hosts the public demo; viewers need no account.
+- ChatGPT: only needed to view the earlier private Sites deployment.
 - Python: installed locally for real collection, no account.
 - No Supabase, AWS, OpenAI API, Figma or paid AI account is needed for this implementation.
 
