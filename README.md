@@ -37,6 +37,54 @@ The advisor is not an LLM. Regression is a fitted statistical model. The startin
 | Exchange | CSV | Inspectable data and straightforward imports |
 | Hosting | Netlify static hosting | No server or database credentials in the frontend |
 
+## System architecture
+
+STRATA uses **local collection + browser analysis + static hosting**. The deployed app performs its calculations in the browser; Python and SQLite run on the machine being measured. CSV is the explicit transfer boundary. There is no hosted telemetry API or cloud database in this version.
+
+```mermaid
+flowchart TB
+    subgraph collection["Local collection"]
+        disk["Storage volume"] --> collector["Python collector"]
+        collector --> history[("SQLite history")]
+        history --> csv["Telemetry CSV"]
+    end
+    subgraph application["Browser application"]
+        csv -->|"User imports file"| validate["Validate and sort observations"]
+        synthetic["Synthetic demo history"] --> state["In-memory server series"]
+        validate --> state
+        state --> engine["OLS, evaluation and runway engine"]
+        engine --> dashboard["Charts, alerts and model evidence"]
+        controls["Capacity scenario controls"] --> engine
+        advisor["Rule-based advisor"] -->|"Local function calls"| engine
+        folder["User-selected folder metadata"] --> inventory["Independent folder inventory"]
+    end
+    netlify["Netlify static assets"] -->|"HTTPS delivery"| application
+    offline["Offline HTML bundle"] -->|"Local delivery"| application
+    dashboard --> output["CSV and scenario JSON downloads"]
+```
+
+### Runtime flow
+
+1. **Collect:** `collector.py` samples actual volume usage and commits timestamped readings to local SQLite.
+2. **Transfer:** export elapsed-day CSV and select it in **Data & collection**. Import validates data before replacing browser state.
+3. **Evaluate:** train OLS on the earlier 78% of observations and test on the remainder; 90 samples produce a 70/20 split.
+4. **Forecast:** refit all history and anchor future demand at the latest observation. Compute threshold crossings and an illustrative uncertainty band.
+5. **Decide:** show measured/current and forecast alerts, compare hypothetical expansion/reclaim scenarios, and inspect advisor function results.
+6. **Export:** download telemetry or a scenario. Data remains in browser memory unless explicitly exported; the app does not upload it to a backend.
+
+| Boundary | Runs where | Stored data |
+| --- | --- | --- |
+| Collector and history | Local machine | Durable SQLite readings |
+| Dashboard and calculation engine | Browser | Session-only series, thresholds and scenarios |
+| Static deployment | Netlify | Published HTML, CSS and JavaScript |
+| Code and documentation | GitHub | Source, tests and report; no measured machine telemetry |
+
+The capacity planner uses a fixed 90% runway target and recommends expansion for 80% utilization at day +90. Alert thresholds are independently adjustable. The advisor uses deterministic rules and local functions, not an LLM. Folder inspection is separate from historical volume forecasting. The hosted app does not automatically connect to remote machines.
+
+**[Read the complete standalone architecture document →](docs/ARCHITECTURE.md)**
+
+It includes the full system diagram, browser modules, runtime sequence, SQLite schema, CSV contracts, model equations, advisor routing, deployment diagram, security boundaries, failure handling, validation and future extensions.
+
 ## Real collection
 
 ```sh
