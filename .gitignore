@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 inventory.json
 .DS_Store
+*.sqlite3
+telemetry.csv
+STRATA-Deploy.zip
+STRATA-Demo-Package.zip

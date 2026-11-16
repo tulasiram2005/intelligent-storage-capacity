@@ -1,55 +1,101 @@
-# STRATA · Intelligent Storage Capacity
+# STRATA / Intelligent Storage Capacity
 
-LLT Unit 5 case study · Section G1. A dependency-free, read-only storage analyzer with an interactive dashboard.
+A working storage observatory for the LLT Unit 5 case study, Section G1.
 
-## Run the demonstration
+## Open the UI immediately
 
-Open `dist/index.html` in a modern browser. No installation, login, API key, or internet connection is required. Alternatively run `python3 -m http.server 8080 --directory dist` and visit http://localhost:8080.
+Live demo: https://strata-capacity-g1.dearmagnolia16.chatgpt.site (owner ChatGPT sign-in required).
 
-## Use a real folder
+For an offline backup, double-click **`dist/STRATA-Offline.html`**. This is the complete dashboard in one file, with CSS, charts, model and demo observations embedded. No installation, API key or server is needed. `dist/index.html` is the multi-file deployment entrypoint. The presentation is `dist/presentation.html`.
+
+## What works
+
+- Three selectable servers with 90 historical observations each, clearly labelled synthetic.
+- Ordinary least squares fitted from observations, anchored future forecasts and approximate 95% prediction bands.
+- Chronological 70/20 evaluation on the reset dataset: MAE, RMSE, training R² and a naive baseline.
+- A forecast scrubber, selectable chart horizon and hover inspection.
+- Measured and forecast threshold alerts with adjustable limits and session-only acknowledgement.
+- Capacity addition, hypothetical reclaim and growth-multiplier scenarios.
+- A deterministic advisor that executes `compare_servers`, `forecast_threshold`, `plan_capacity`, or `evaluate_model` and shows actual arguments/results.
+- Synthetic next-day simulation with recalculation and reset.
+- Validated telemetry CSV import/export and local folder metadata inspection.
+- A Python collector that stores actual disk usage in SQLite and exports compatible CSV.
+
+The advisor is not an LLM. Regression is a fitted statistical model. The starting dataset is synthetic; actual telemetry must be collected or imported separately.
+
+## Technology
+
+| Layer | Implementation | Reason |
+| --- | --- | --- |
+| Interface | HTML, CSS, JavaScript | Works directly from a file and static hosting |
+| Charts | SVG | Interactive, dependency-free and readable offline |
+| Forecast | OLS in a pure JavaScript module | Testable calculations and visible model evidence |
+| Collection | Python standard library | Measures real containing-volume usage |
+| History | SQLite | Local, durable timestamped observations |
+| Exchange | CSV | Inspectable data and straightforward imports |
+| Hosting | ChatGPT Sites | No server or database credentials in the frontend |
+
+## Real collection
 
 ```sh
-python3 scanner.py /path/to/chosen/folder -o inventory.json
+python3 collector.py --path . --once
+python3 collector.py --path . --interval 60
+# Press Ctrl+C after collecting samples.
+python3 collector.py --export telemetry.csv
 ```
 
-Select **Import folder scan** in the dashboard and choose the JSON output. The inventory is processed in browser memory and is not uploaded to a server. File names are included in the JSON; keep the inventory private. The disk metrics describe the containing volume; composition and duplicate savings describe only the selected folder. Do not scan a rapidly changing folder for reproducible results.
+Import the exported CSV through **Data & collection**. The schema is `server,day,used_gb,capacity_gb`. `day` is elapsed real time expressed in days, not an artificially incremented sample counter. Three distinct timestamps are required to fit a model, ten to show holdout metrics. A few minutes of samples are not adequate evidence for reliable long-term forecasting. If volume capacity changes, start a new series/database.
 
-## Demonstration sequence (3 minutes)
+The collector does not inspect file contents. The separate legacy `scanner.py` is available for optional read-only duplicate inventory; its JSON is not the telemetry CSV used by the v2 dashboard.
 
-1. Start with the labelled demonstration dataset: 742 GB used of 1,000 GB; 6 GB/day growth gives 43 days of runway.
-2. Increase growth to 12 GB/day: runway becomes 22 days and the capacity attention label appears.
-3. Preview cleanup: 275 GB of extra copies; at 6 GB/day runway would rise to 89 days. Nothing is deleted.
-4. Search `copy` in File explorer to inspect the extra copies.
-5. Run the scanner on a prepared folder with two identical files and one different file; import the inventory and compare the results.
-6. Open Case study for the problem, method, team and faculty details.
+## Demonstration in five minutes
 
-## Architecture
+1. Overview: select Atlas, Nova and Vault. Explain the synthetic-data label.
+2. On Atlas, scrub forward. Point out observed usage, forecast, thresholds and interval.
+3. Click **Simulate next day**, observe recalculation, then reset for reproducible numbers.
+4. Planner: select Atlas and add 250 GB. Its 90% runway grows from 21 to 77 days.
+5. Model lab: show 70 training and 20 test observations, with Atlas test MAE 5.37 GB.
+6. Advisor: ask which server reaches 90% first and inspect `compare_servers` results.
+7. Data: inspect a prepared local folder or import a measured telemetry file.
 
-Chosen folder → Python inventory → same-size grouping → streaming SHA-256 → JSON → browser validation → dashboard → scenario forecast and cleanup preview.
-
-The Python scanner skips symlinks, `.git`, `node_modules`, and `.venv`. It reads files and writes only the requested JSON output. Equal-size candidate files are hashed in 1 MiB chunks. A duplicate group retains one representative; each other copy is counted once. Retention order is arbitrary and is not a recommendation about ownership. Empty files are omitted from duplicate grouping because they offer no capacity saving.
-
-Runway is `ceil((capacity - used) / growth)`. Zero growth produces no finite exhaustion estimate. This is transparent rule-based decision support, not a trained ML model. Demo data is synthetic. Real scans measure bytes; GB in the interface means decimal 1,000,000,000 bytes.
-
-## Verification
+## Validation
 
 ```sh
-node tests/engine.test.js
+node --test tests/engine.test.js
 python3 -m unittest discover -s tests
+node scripts/build.mjs
 ```
 
-Tests cover duplicate detection with a same-size nonduplicate, skipped symlinks, missing folders, zero growth, full volumes, reclaim accounting and invalid imports.
+Nine JavaScript tests cover exact-fit recovery, holdout separation, threshold edges, non-growing trends, input validation, CSV roundtrip, expansion sufficiency and advisor dispatch. Three Python tests cover real volume reads/elapsed-time export and the optional scanner's duplicate/symlink behavior.
 
-## Scope and limitations
+## Deployment
 
-This is a polished academic prototype, not a certified production storage service. It has no automatic deletion, account system, scheduled monitoring, learned time-series model or cloud-storage connection. Forecast accuracy depends on the selected growth assumption. Volume usage may include files outside the scanned folder. On macOS, APFS shared blocks, snapshots and compression can make logical file sizes differ from physically reclaimable disk space. Files may change during scanning; errors are counted but atomic snapshots are not taken. Hashing large folders takes time. Browser imports are limited to 20 MB. For production, add snapshot consistency, measured growth history, access controls, audit logging and large-inventory pagination.
+The `dist` directory is ready for static deployment. `netlify.toml` sets its publish path. To deploy from GitHub, import this repository into Netlify, leave the build command empty and set the publish directory to `dist`. For manual deployment, upload a ZIP containing the contents of `dist` with `index.html` at its root.
 
-## Submission
+The app is deployed on ChatGPT Sites at the live link above. It is owner-private; sign in with the owning ChatGPT account. The source identity is in `.openai/hosting.json`. Deployment succeeded, but browser interaction checks are blocked by owner sign-in. Check `docs/DELIVERY_STATUS.md` for verification details.
 
-- `docs/REPORT.md`: case study report, team details, use case, methodology and evaluation.
-- `docs/VIVA.md`: concise questions and answers.
-- `dist/presentation.html`: six-slide presentation; use arrow keys or the buttons, or print to PDF.
+## Model details and limitations
 
-## Accounts
+OLS minimizes squared residual error. Evaluation fits the first floor(0.78 × n) observations and tests the remaining observations (at least two). The naive baseline holds the last training value constant. The app then refits all observations for the displayed equation and operational slope. Forecast values are `latest_usage + fitted_slope × future_days`, anchored at the last observation. Runway is the ceiling of threshold headroom divided by positive slope.
 
-Core local demo: none. Source hosting: GitHub. Hosted preview: ChatGPT Sites. Supabase, OpenAI API, AWS, Vercel, Figma and paid AI tools are not required for this scope.
+The approximate 95% interval uses `1.96 × residual_standard_error × sqrt(1 + 1/n + (x - mean_x)^2 / Sxx)`. It uses the OLS residual variance while displaying an anchored forecast. It is an illustrative uncertainty band, not a calibrated guarantee. Autocorrelation, workload shifts and short sample spans can invalidate its assumptions. Demand forecasts can exceed physical capacity; observations cannot. Imported series require constant capacity and unique times.
+
+Alerts and scenarios are browser-session state. Imported telemetry and folder metadata remain in browser memory. The app does not upload them, monitor background servers, auto-delete files, or provision disks. Production use would require longer telemetry histories, authenticated agents, audit logging, reliable data ingestion and workload-aware modelling.
+
+## Accounts required
+
+- GitHub: existing connected account, private source repository.
+- ChatGPT: your existing owning account opens the private live deployment.
+- Netlify: optional alternative hosting; not required for the deployed Sites version.
+- Python: installed locally for real collection, no account.
+- No Supabase, AWS, OpenAI API, Figma or paid AI account is needed for this implementation.
+
+## Team and faculty
+
+| Member | Registration number |
+| --- | --- |
+| PANCHUMARTHI VENKATA SAHITH | RA2311003010368 |
+| ASWANTH S P | RA2311003010399 |
+| BAJANTRI CHIKULAGURI TULASI RAM | RA2311003010422 |
+
+Section G1. Faculty: Dr. V.S.Bakkialakshmi, Assistant Professor, Faculty Code 103043.

@@ -1,5 +1,10 @@
-const assert=require('node:assert/strict');const e=require('../dist/engine.js');
-assert.equal(e.forecast(742,1000,6),43);assert.equal(e.forecast(742,1000,0),null);assert.equal(e.forecast(1000,1000,6),0);
-assert.equal(e.reclaimable([{size:10,duplicate:true},{size:10}]),10);
-assert.throws(()=>e.validate({capacity:10,used:20,files:[]}));
-assert.throws(()=>e.validate({capacity:10,used:5,files:[{name:'bad',size:-1}]}));console.log('6 engine assertions passed');
+const test=require('node:test');const assert=require('node:assert/strict');const C=require('../dist/engine.js');
+test('OLS recovers an exact linear trend',()=>{const m=C.fit(Array.from({length:20},(_,i)=>({day:i,used:10+2*i})));assert.equal(m.slope,2);assert.equal(m.intercept,10);assert.equal(m.r2,1);assert.equal(C.interval(m,30),0)});
+test('chronological holdout uses unseen later observations',()=>{const p=Array.from({length:50},(_,i)=>({day:i,used:10+2*i}));const e=C.evaluate(p);assert.equal(e.train,39);assert.equal(e.test,11);assert.equal(e.mae,0);assert.ok(e.baselineMAE>0);p[49].used+=20;assert.ok(C.evaluate(p).mae>0)});
+test('runway supports reached and non-growing cases',()=>{const s={capacity:100,points:[{day:1,used:70},{day:2,used:72},{day:3,used:74}]};assert.equal(C.runway(s,90),8);assert.equal(C.runway(s,70),0);assert.equal(C.runway(s,90,100,0,0),null);assert.equal(C.runway(s,90,200),53);assert.equal(C.forecastValue(s,10),94)});
+test('CSV rejects malformed telemetry without changing state',()=>{for(const input of ['server,day,used_gb,capacity_gb\na,1,200,100','server,day,used_gb,capacity_gb\na,1,10,100\na,1,11,100','server,day,used_gb,capacity_gb\na,,10,100','x,y\n1,2'])assert.throws(()=>C.parseCSV(input));});
+test('CSV roundtrip preserves observations and server count',()=>{const s=C.makeDemo();const parsed=C.parseCSV(C.toCSV(s));assert.equal(parsed.length,3);assert.equal(parsed[0].points.length,90);assert.equal(parsed[0].points[89].used,s[0].points[89].used)});
+test('capacity recommendation meets target utilization',()=>{const s=C.makeDemo(),r=C.tools.plan_capacity(s,{server:s[0].id,horizon:90,target:80});assert.ok(r.projectedGB/(s[0].capacity+r.additionalGB)<=.8);assert.ok(r.additionalGB>0)});
+test('advisor dispatches actual functions and rejects unsupported queries',()=>{const s=C.makeDemo();assert.equal(C.advise(s,'Which server reaches 90% first?','atlas').name,'compare_servers');assert.equal(C.advise(s,'How accurate is Nova?','atlas').args.server,'nova');assert.ok(C.advise(s,'hello','atlas').error);assert.ok(C.advise(s,'When does Atlas hit 110%?','atlas').error)});
+test('declining storage does not produce finite exhaustion',()=>{const s={capacity:100,points:[{day:1,used:70},{day:2,used:60},{day:3,used:50}]};assert.equal(C.runway(s,90),null);assert.equal(C.forecastValue(s,10),0)});
+test('insufficient validation samples are explicit',()=>assert.equal(C.evaluate([{day:0,used:1},{day:1,used:2},{day:2,used:3}]),null));

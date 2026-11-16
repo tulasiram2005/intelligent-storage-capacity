@@ -1,84 +1,134 @@
 # INTELLIGENT STORAGE CAPACITY
-## STRATA: A Read-Only Storage Analysis and Capacity Planning Prototype
 
-**LLT Case Study · Unit 5 · Section G1**
+LLT CASE STUDY / UNIT 5 / SECTION G1
 
-| Team member | Registration number |
-| --- | --- |
-| PANCHUMARTHI VENKATA SAHITH | RA2311003010368 |
-| ASWANTH S P | RA2311003010399 |
-| BAJANTRI CHIKULAGURI TULASI RAM | RA2311003010422 |
+INTELLIGENT
+STORAGE CAPACITY
 
-**Faculty:** Dr. V.S.Bakkialakshmi · Faculty Code 103043 · Assistant Professor
+STRATA Storage Observatory
 
-## 1. Abstract
+Monitoring, forecasting and planning storage capacity through real telemetry collection and an explainable regression model.
 
-Shared engineering laboratories accumulate large media files, datasets, project archives and duplicate submissions. When capacity is checked only after a disk fills, work is interrupted and cleanup decisions are rushed. Intelligent Storage Capacity addresses this problem through a read-only inventory scanner and a dashboard that explains usage, identifies duplicate content and models future capacity pressure.
+TEAM MEMBER | REGISTRATION NUMBER
 
-The prototype uses Python standard-library filesystem functions and streaming SHA-256 hashing to produce a JSON inventory. A browser dashboard displays capacity, file categories, search results, scenario-based runway and a cleanup preview. A synthetic dataset supports a repeatable classroom demonstration, while imported folder scans demonstrate real filesystem analysis. No trained machine-learning model or automatic deletion is claimed.
+PANCHUMARTHI VENKATA SAHITH | RA2311003010368
 
-## 2. Problem statement and objectives
+ASWANTH S P | RA2311003010399
 
-A laboratory administrator needs to know how much storage is in use, which files occupy a chosen project folder, whether identical copies exist and when capacity may be exhausted under an assumed workload. The objectives are to inventory files without modifying them, verify duplicate content, make capacity calculations explainable and preview possible savings before any manual action.
+BAJANTRI CHIKULAGURI TULASI RAM | RA2311003010422
 
-## 3. Use case
+Faculty: Dr. V.S.Bakkialakshmi
+Faculty code: 103043
+Designation: Assistant Professor
 
-**Primary actor:** Laboratory administrator. **Secondary actors:** Student project teams. **Trigger:** Capacity review before a project submission period. **Preconditions:** Python 3.10 or newer, a readable folder and a modern browser. No cloud account is required for local execution.
+Abstract
 
-**Main flow:** The administrator scans a chosen folder; the scanner records relative paths, sizes, categories and modification ages; same-size candidates are hashed; one representative is retained per identical-content group; JSON is imported into the dashboard; the administrator inspects composition, adjusts expected daily growth and previews duplicate savings.
+Shared engineering laboratories accumulate datasets, submissions and archives. A current usage percentage does not explain how soon capacity may become a constraint. STRATA provides a dashboard that compares servers, estimates threshold crossings and lets an administrator explore expansion scenarios.
 
-**Alternative flows:** Unreadable entries increment an error count. Missing folders fail with an error. Invalid JSON is rejected by the dashboard. Zero daily growth produces no finite exhaustion date. A scan with no duplicate files produces zero duplicate savings.
+A Python collector records actual volume usage in SQLite and exports timestamped CSV. The browser fits ordinary least squares regression, evaluates it on a chronological holdout and displays forecast errors. The starting history contains 270 explicitly synthetic observations for a repeatable classroom demonstration. A deterministic advisor executes calculation functions and exposes their inputs and outputs.
 
-**Postcondition:** A reviewable inventory and capacity scenario are available. The source folder remains unchanged.
+Prepared for the LLT case study demonstration. This is an academic prototype, with no automatic deletion or hardware provisioning.
 
-## 4. Design and implementation
+01 / PROBLEM AND USE CASE
 
-The architecture separates data collection from presentation. `scanner.py` performs local read-only analysis. `dist/engine.js` contains testable forecast, validation and reclaim calculations. `dist/app.js` connects the inventory to dashboard controls. HTML and CSS provide a responsive interface without external dependencies.
+Problem statement
 
-The scanner first groups nonempty files by logical byte size, reducing unnecessary hashing. It then reads candidate files in 1 MiB chunks to compute SHA-256 digests. Matching digests within the same-size group identify duplicate candidates. The implementation does not perform an additional byte-by-byte comparison, so it relies on SHA-256 collision resistance. Symlinks are skipped to avoid following external paths or cycles.
+The lab administrator needs to identify which server approaches capacity first and decide when to expand it. Reactive checks after a disk is full can interrupt work. The solution must show both current measurements and the assumptions behind future projections.
 
-Capacity uses the containing filesystem's reported total and used values. Category totals and duplicates cover only the scanned folder. This distinction is necessary when the volume also contains unrelated files.
+Objectives
 
-## 5. Capacity model
+Collect real disk readings without reading file contents. Compare multiple storage workloads. Fit an explainable growth model, expose held-out errors, generate threshold alerts and evaluate capacity changes before any infrastructure action.
 
-Remaining capacity = total capacity minus used capacity. For positive selected daily growth, runway in days = ceiling of remaining capacity divided by daily growth. After a cleanup preview, used capacity is reduced by the sum of extra duplicate copies. At zero growth, no finite exhaustion estimate is shown.
+Use case: capacity review before submissions
 
-This model is a what-if calculation rather than an empirical prediction. A single scan provides no historical growth series. A later version could store periodic samples and fit a trend with uncertainty bounds.
+ELEMENT | DESCRIPTION
 
-## 6. Demonstration and expected outcomes
+Primary actor | Laboratory administrator
 
-The synthetic scenario contains 12 files totalling 742 GB on a 1,000 GB volume. Two extra copies account for 275 GB. At 6 GB/day, initial runway is 43 days. Previewing duplicate removal lowers modelled usage to 467 GB and extends runway to 89 days. At 12 GB/day, initial runway falls to 22 days.
+Trigger | Review capacity before a project submission period
 
-For the real-data demonstration, create a temporary folder containing two identical text files and a third different file of the same length. Run the scanner, import its JSON and verify that only one extra copy is counted. Real disk metrics depend on the demonstration machine and must not be presented as fixed benchmark results.
+Preconditions | Readable filesystem or valid historical CSV; modern browser; Python for collection
 
-## 7. Verification
+Main flow | Collect readings; export CSV; import history; inspect forecasts; compare scenarios; export the proposed plan
 
-The implementation includes two Python unit tests and six JavaScript assertions. Python tests verify duplicate grouping, rejection of a same-size nonduplicate, symlink exclusion, byte totals and a missing-folder error. JavaScript assertions verify normal and zero-growth forecasts, a full-volume boundary, duplicate accounting and invalid imported values. These checks passed during development. They are functional checks, not a performance benchmark or evidence of enterprise readiness.
+Alternative flow | Reject invalid rows, duplicate timestamps or changing capacity. Show no finite crossing for non-positive growth below a threshold.
 
-## 8. Proposed team responsibilities
+Postcondition | Administrator has a reviewable forecast and capacity scenario. Files and hardware remain unchanged.
 
-These are suggested presentation responsibilities, not claims about work already performed by each member.
+Demonstration boundary
 
-| Member | Suggested responsibility |
-| --- | --- |
-| PANCHUMARTHI VENKATA SAHITH | Problem statement, actor flow and storage scanner explanation |
-| ASWANTH S P | Dashboard demonstration, forecast calculation and cleanup scenario |
-| BAJANTRI CHIKULAGURI TULASI RAM | Integration, test evidence, repository and limitations |
+The initial Atlas, Nova and Vault series are synthetic. The collector and folder inspector operate on real local measurements. A short live collection demonstrates the data path, but it cannot justify a reliable forecast months ahead.
 
-## 9. Scalability, cost and limitations
+Suggested speaking roles
 
-The local implementation has no API or hosting cost. Directory traversal is linear in entry count; duplicate hashing cost depends on the total bytes in equal-size candidate groups. Metadata is held in memory, and browser rendering currently lacks pagination, so very large inventories require a different design. Physical storage savings can differ from logical duplicate byte totals because of compression, copy-on-write sharing and snapshots.
+PANCHUMARTHI VENKATA SAHITH: problem and actor flow. ASWANTH S P: dashboard, forecast and planning scenario. BAJANTRI CHIKULAGURI TULASI RAM: real-data path, model evaluation and advisor tool output. These are proposed presentation roles, not claims about past individual contributions.
 
-The prototype does not enforce file ownership, recommend deletion of old files, perform automatic cleanup, or guarantee a consistent snapshot while files change. A production system would require authenticated access, audit records, incremental scans, snapshot support, retention policies and measured growth history.
+02 / DESIGN AND METHODOLOGY
 
-## 10. Conclusion
+Technology stack
 
-Intelligent Storage Capacity demonstrates a practical link between filesystem analysis and understandable decision support. The combination of real inventory scanning, content-based duplicate detection and interactive capacity scenarios makes storage planning easier to explain and review. The prototype prioritizes transparent calculations and read-only operation while leaving room for future monitoring and historical forecasting.
+COMPONENT | TECHNOLOGY | PURPOSE
 
-## Technical reading
+Collector | Python standard library | Read filesystem total and used bytes
 
-- Python pathlib documentation: https://docs.python.org/3/library/pathlib.html
-- Python hashlib documentation: https://docs.python.org/3/library/hashlib.html
-- Python shutil.disk_usage documentation: https://docs.python.org/3/library/shutil.html#shutil.disk_usage
+History | SQLite | Store server and actual timestamp
 
-These links are suggested technical reading; no external performance claims are made in this report.
+Exchange | CSV | Transfer inspectable telemetry
+
+Model | JavaScript OLS | Fit trend and evaluate held-out errors
+
+Dashboard | HTML, CSS, SVG | Interact with forecasts and scenarios
+
+Deployment | Static hosting / offline HTML | Run without API keys or runtime services
+
+Collection and preprocessing
+
+The collector reads the containing volume with shutil.disk_usage. Each timestamp is stored in SQLite. Export expresses elapsed time in days, preserving the true sampling interval. Import validates numeric values, unique timestamps and constant capacity per server. It accepts at least three observations for fitting and at least ten for validation metrics.
+
+Regression and chronological evaluation
+
+Ordinary least squares fits usage = intercept + slope x day. For the reset dataset, the first 70 observations train the evaluation model and the final 20 test it. MAE is average absolute test error; RMSE is the square root of average squared test error. The baseline repeats the last training value for every test point.
+
+After evaluation, the operational model refits all observations. The displayed equation comes from this full-history fit. Future usage is anchored at the latest observation and extended with the fitted slope, avoiding a jump at the observed/forecast boundary.
+
+Thresholds and scenarios
+
+For positive growth, runway equals the ceiling of (threshold capacity minus latest usage) divided by slope. Reached thresholds return zero. Non-positive growth below a threshold has no finite crossing estimate. The planner adjusts capacity, a hypothetical one-time reclaim amount and a growth multiplier.
+
+Advisor function calls
+
+Supported questions route deterministically to compare_servers, forecast_threshold, plan_capacity or evaluate_model. The functions execute against the current data, and the UI shows their arguments and results. The advisor does not call an LLM or paid API.
+
+03 / RESULTS AND EVALUATION
+
+Reset dataset results
+
+All values below come from the deterministic synthetic dataset. Simulating another day or importing measurements changes the results.
+
+SERVER | USED / TOTAL GB | DAYS TO 90% | TEST MAE | TEST RMSE
+
+Atlas | 817.65 / 1,000 | 21 | 5.37 GB | 6.06 GB
+
+Nova | 545.17 / 750 | 61 | 3.20 GB | 3.92 GB
+
+Vault | 1,153.41 / 2,000 | 265 | 6.92 GB | 7.76 GB
+
+Atlas expansion example: adding 250 GB increases its runway to 90% from 21 days to 77 days under the same fitted growth. For a 90-day planning horizon and an 80% target, the calculated minimum addition is 476 GB.
+
+Verification
+
+Nine JavaScript tests passed: exact linear-trend recovery, chronological evaluation, threshold edge cases, malformed CSV rejection, CSV roundtrip, expansion sufficiency, advisor dispatch, declining trends and insufficient evaluation history. Three Python tests passed for real volume collection and elapsed-time export, plus the optional duplicate scanner. A real volume reading was also collected into a local temporary database.
+
+Browser visual and end-to-end checks depend on an accessible preview or deployment. Passing calculation tests alone does not establish browser correctness or production readiness.
+
+Uncertainty and limitations
+
+The shaded band uses a normal approximation: 1.96 times residual standard error, adjusted for sample size and forecast distance. It assumes independent residuals with constant variance and a continuing linear trend. Anchoring, autocorrelation, sudden imports or retention jobs can affect its coverage. Synthetic-data scores do not establish accuracy on real workloads.
+
+The prototype has no background cloud ingestion, user authentication, automatic cleanup or provisioning. Imports and acknowledgements remain in browser memory. Production use would require representative telemetry history, authenticated agents, audit records, robust ingestion and workload-aware modelling.
+
+Conclusion
+
+STRATA connects real usage collection with an inspectable forecasting workflow. It makes threshold risk and capacity tradeoffs visible while keeping the model, source data and limitations explainable for the administrator.
+
+Implementation evidence: source code, tests, sample CSV, collector, offline dashboard, browser slide deck and viva guide are included in the project repository.
